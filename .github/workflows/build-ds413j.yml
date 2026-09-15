@@ -1,0 +1,41 @@
+name: Build DS413j SPK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'dsm/**'
+      - 'spk/**'
+      - '.github/workflows/build-ds413j.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Build ARMv5 service
+        working-directory: dsm/cmd/markl3
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=5 go build -trimpath -ldflags='-s -w' -o ../../../spk/target/markl3 .
+      - name: Assemble SPK
+        run: |
+          set -eux
+          mkdir -p spk/target/www
+          cp dsm/www/index.html spk/target/www/index.html
+          chmod 755 spk/target/markl3
+          chmod 755 spk/scripts/*
+          rm -f MARK-LIII-DS413j-*.spk
+          tar -czf spk/package.tgz -C spk target
+          tar -cf MARK-LIII-DS413j-1.0.0.spk -C spk INFO package.tgz scripts
+          tar -tf MARK-LIII-DS413j-1.0.0.spk
+      - name: Smoke-test archive
+        run: |
+          set -eux
+          tar -xOf MARK-LIII-DS413j-1.0.0.spk INFO | grep 'arch="88f628x"'
+          file spk/target/markl3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MARK-LIII-DS413j
+          path: MARK-LIII-DS413j-1.0.0.spk
