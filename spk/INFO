@@ -1,0 +1,8 @@
+package="DiskStations-Jarvis-Mark-LIII"
+version="1.0.0"
+displayname="MARK LIII Jarvis"
+maintainer="OskarFisk"
+description="Lightweight MARK LIII Jarvis assistant for Synology DiskStation. Includes a LAN web dashboard and Gemini API integration. Designed for DS413j / DSM 6.2.4 and the 88f628x ARMv5 platform."
+arch="88f628x"
+os_min_ver="6.2-23739"
+startable="yes"
