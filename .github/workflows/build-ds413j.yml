@@ -8,34 +8,64 @@ on:
       - 'spk/**'
       - '.github/workflows/build-ds413j.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
+          cache: false
+
       - name: Build ARMv5 service
         working-directory: dsm/cmd/markl3
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=5 go build -trimpath -ldflags='-s -w' -o ../../../spk/target/markl3 .
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: arm
+          GOARM: '5'
+        run: |
+          set -eux
+          go version
+          go mod download
+          go build -trimpath -ldflags='-s -w' -o ../../../spk/target/markl3 .
+
+      - name: Verify executable
+        run: |
+          set -eux
+          test -x spk/target/markl3
+          file spk/target/markl3
+          readelf -h spk/target/markl3 | grep -E 'Class:|Machine:'
+
       - name: Assemble SPK
         run: |
           set -eux
-          mkdir -p spk/target/www
-          cp dsm/www/index.html spk/target/www/index.html
           chmod 755 spk/target/markl3
           chmod 755 spk/scripts/*
           rm -f MARK-LIII-DS413j-*.spk
           tar -czf spk/package.tgz -C spk target
-          tar -cf MARK-LIII-DS413j-1.0.0.spk -C spk INFO package.tgz scripts
-          tar -tf MARK-LIII-DS413j-1.0.0.spk
-      - name: Smoke-test archive
+          tar -cf MARK-LIII-DS413j-1.0.1-0001.spk -C spk INFO package.tgz scripts
+          tar -tf MARK-LIII-DS413j-1.0.1-0001.spk
+
+      - name: Validate SPK
         run: |
           set -eux
-          tar -xOf MARK-LIII-DS413j-1.0.0.spk INFO | grep 'arch="88f628x"'
-          file spk/target/markl3
-      - uses: actions/upload-artifact@v4
+          test "$(tar -xOf MARK-LIII-DS413j-1.0.1-0001.spk INFO | grep -c 'arch=\"88f628x\"')" -eq 1
+          tar -xOf MARK-LIII-DS413j-1.0.1-0001.spk package.tgz > /tmp/package.tgz
+          tar -tzf /tmp/package.tgz | grep -E '^target/markl3$'
+          tar -tzf /tmp/package.tgz | grep -E '^target/$'
+
+      - name: Upload SPK
+        uses: actions/upload-artifact@v4
         with:
-          name: MARK-LIII-DS413j
-          path: MARK-LIII-DS413j-1.0.0.spk
+          name: MARK-LIII-DS413j-1.0.1-0001
+          path: MARK-LIII-DS413j-1.0.1-0001.spk
+          if-no-files-found: error
