@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>MARK LIII — Browser</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--panel:#111722;--line:#263044;--text:#edf2f9;--muted:#8995a8;--accent:#5ca9ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#172033 0,#080b12 42%);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}main{width:min(1100px,100%);margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:16px}.brand{font-size:24px;font-weight:800;letter-spacing:.04em}.sub{color:var(--muted);font-size:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7d8795;margin-right:7px}.online{background:#53d68b}.card{background:rgba(17,23,34,.9);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 10px 35px #0005}.chat{height:min(62vh,650px);overflow:auto;padding:5px}.bubble{max-width:85%;padding:11px 14px;border-radius:14px;margin:9px 0;white-space:pre-wrap;overflow-wrap:anywhere}.you{margin-left:auto;background:#1b3552}.mark{background:#19202d;border:1px solid #283347}.composer{display:flex;gap:10px;margin-top:12px}.composer input,.settings input{flex:1;min-width:0}input,button{border:1px solid var(--line);border-radius:11px;background:#0b1018;color:var(--text);padding:12px;font:inherit}button{cursor:pointer;background:#183453;border-color:#31577e}button:hover{filter:brightness(1.15)}.settings{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}@media(max-width:700px){main{padding:12px}.settings{grid-template-columns:1fr}.composer{position:sticky;bottom:0;background:#080b12;padding-top:8px}.bubble{max-width:94%}}
+</style>
+</head>
+<body><main>
+<header class="top"><div><div class="brand">MARK LIII</div><div class="sub">Universal browser interface</div></div><div id="state"><span class="dot"></span>Connecting…</div></header>
+<section class="card"><div id="chat" class="chat"><div class="bubble mark">MARK LIII is ready. Connect me to a MARK LIII server and start chatting.</div></div><div class="composer"><input id="msg" autocomplete="off" placeholder="Ask MARK LIII…"><button id="send">Send</button></div></section>
+<section class="card"><h3>Connection</h3><div class="settings"><input id="endpoint" placeholder="Server URL, e.g. http://192.168.1.50:8080"><input id="key" type="password" placeholder="Gemini API key (optional if server already has it)"><button id="save">Save</button></div><div class="sub" style="margin-top:9px">The browser UI works on desktop, Android, iPhone, tablets and other modern browsers. Keep the API key on the server when possible.</div></section>
+<script>
+const $=s=>document.querySelector(s);const chat=$('#chat');let endpoint=localStorage.markl3Endpoint||location.origin;$('#endpoint').value=endpoint==='null'?'':endpoint;
+function add(text,who){const d=document.createElement('div');d.className='bubble '+(who==='You'?'you':'mark');d.textContent=(who?who+': ':'')+text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+async function health(){try{const r=await fetch(endpoint.replace(/\/$/,'')+'/api/health');if(!r.ok)throw Error();const j=await r.json();$('#state').innerHTML='<span class="dot online"></span>'+((j.service||'MARK LIII')+' online')}catch{$('#state').innerHTML='<span class="dot"></span>Offline / check server'}}
+async function send(){const input=$('#msg'),m=input.value.trim();if(!m)return;add(m,'You');input.value='';try{const body={message:m};const key=$('#key').value.trim();if(key)body.gemini_api_key=key;const r=await fetch(endpoint.replace(/\/$/,'')+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const t=await r.text();let j;try{j=JSON.parse(t)}catch{j={reply:t}}if(!r.ok)throw Error(j.error||j.reply||'Request failed');add(j.reply||j.response||t,'MARK')}catch(e){add('Error: '+e.message,'MARK')}}
+$('#send').onclick=send;$('#msg').onkeydown=e=>{if(e.key==='Enter')send()};$('#save').onclick=()=>{endpoint=$('#endpoint').value.trim().replace(/\/$/,'');if(!endpoint)endpoint=location.origin;localStorage.markl3Endpoint=endpoint;health()};health();
+</script></main></body></html>
