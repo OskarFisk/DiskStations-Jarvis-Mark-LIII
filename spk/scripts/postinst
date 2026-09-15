@@ -1,0 +1,5 @@
+#!/bin/sh
+PKG="DiskStations-Jarvis-Mark-LIII"
+mkdir -p "/var/packages/$PKG/var"
+chmod 700 "/var/packages/$PKG/var"
+exit 0
