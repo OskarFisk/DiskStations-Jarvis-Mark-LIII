@@ -1,0 +1,37 @@
+#!/bin/sh
+PKG="DiskStations-Jarvis-Mark-LIII"
+PKG_DIR="/var/packages/$PKG"
+TARGET="$PKG_DIR/target"
+VAR="$PKG_DIR/var"
+PIDFILE="$VAR/markl3.pid"
+LOGFILE="$VAR/markl3.log"
+BIN="$TARGET/markl3"
+
+start_daemon() {
+    mkdir -p "$VAR"
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then exit 0; fi
+    export MARK_DATA_DIR="$VAR"
+    cd "$TARGET" || exit 1
+    nohup "$BIN" >>"$LOGFILE" 2>&1 &
+    echo $! > "$PIDFILE"
+    sleep 1
+    if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then rm -f "$PIDFILE"; return 1; fi
+}
+stop_daemon() {
+    if [ -f "$PIDFILE" ]; then
+        PID=$(cat "$PIDFILE")
+        kill "$PID" 2>/dev/null || true
+        i=0
+        while kill -0 "$PID" 2>/dev/null && [ $i -lt 10 ]; do sleep 1; i=$((i+1)); done
+        kill -9 "$PID" 2>/dev/null || true
+        rm -f "$PIDFILE"
+    fi
+}
+status_daemon() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
+
+case "$1" in
+  start) start_daemon ;;
+  stop) stop_daemon ;;
+  status) status_daemon ;;
+  *) echo "Usage: $0 {start|stop|status}"; exit 1 ;;
+esac
