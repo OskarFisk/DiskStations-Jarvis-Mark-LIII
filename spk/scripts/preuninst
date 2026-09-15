@@ -1,0 +1,4 @@
+#!/bin/sh
+PKG="DiskStations-Jarvis-Mark-LIII"
+/var/packages/$PKG/scripts/start-stop-status stop 2>/dev/null || true
+exit 0
